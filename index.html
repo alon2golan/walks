@@ -64,6 +64,11 @@
     }
   });
 
+  // קישור שהודבק בלשונית שכבר פתוחה: הדפדפן משנה רק את ה-# בלי לטעון מחדש, אז טוענים בעצמנו
+  window.addEventListener('hashchange', function () {
+    if (/[#&]t=[A-Za-z0-9]{32,80}/.test(location.hash)) location.reload();
+  });
+
   frame.src = EXEC;                                // בלי מפתח בכתובת
 })();
 </script>
