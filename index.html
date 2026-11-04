@@ -21,12 +21,51 @@
 </head>
 <body>
 <div id="fallback">טוען…</div>
-<!-- האפליקציה עצמה רצה ב-Google Apps Script. הדף הזה רק מציג אותה במסך מלא. -->
-<iframe
-  src="https://script.google.com/macros/s/AKfycbzd1K9hn0MMQs__kBtv9ujMBBuzE4I1PR8kT9cMJdqx__JxlngdX3TZAXgiilneYg0/exec"
-  title="דוגיסיטר"
-  allow="clipboard-write"
-  referrerpolicy="no-referrer"
-  onload="document.getElementById('fallback').remove()"></iframe>
+<!-- האפליקציה עצמה רצה ב-Google Apps Script; הדף הזה רק מציג אותה במסך מלא.
+     אבטחה:
+     • קישור הצטרפות ‎#t=…‎ — החלק שאחרי # לא נשלח לאף שרת, ונמחק משורת הכתובת מיד.
+       הקוד חד-פעמי: בשימוש הראשון השרת מחליף אותו במפתח מכשיר, והקישור מפסיק לעבוד.
+     • מפתח המכשיר נשמר רק במכשיר ומועבר לאפליקציה ב-postMessage, רק לחלון שבתוך ה-iframe שלנו
+       ורק לדומיין של Google — אף פעם לא בכתובת URL. בגיליון נשמר רק hash שלו. -->
+<iframe id="app" title="דוגיסיטר" allow="clipboard-write" referrerpolicy="no-referrer"
+  onload="var f=document.getElementById('fallback'); if(f) f.remove()"></iframe>
+<script>
+(function () {
+  var EXEC = 'https://script.google.com/macros/s/AKfycbzd1K9hn0MMQs__kBtv9ujMBBuzE4I1PR8kT9cMJdqx__JxlngdX3TZAXgiilneYg0/exec';
+  var K = 'dogsitterKey', OK = /^[A-Za-z0-9]{32,80}$/;
+  var GOOG = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
+  var m = location.hash.match(/[#&]t=([A-Za-z0-9]{32,80})/), token = m ? m[1] : '';
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  var key = '';
+  try { localStorage.removeItem('dogsitterPin'); key = localStorage.getItem(K) || ''; } catch (e) {}
+  var frame = document.getElementById('app');
+
+  // האם ההודעה הגיעה מחלון שנמצא בתוך ה-iframe שלנו (ולא מחלון אחר)?
+  function insideOurFrame(w) {
+    function walk(win, depth) {
+      if (win === w) return true;
+      if (depth > 3) return false;
+      try { for (var i = 0; i < win.frames.length; i++) if (walk(win.frames[i], depth + 1)) return true; } catch (e) {}
+      return false;
+    }
+    return walk(frame.contentWindow, 0);
+  }
+
+  window.addEventListener('message', function (e) {
+    if (!GOOG.test(e.origin) || !insideOurFrame(e.source)) return;
+    var d = e.data || {};
+    if (d.type === 'dogsitter-ready') {
+      e.source.postMessage({ type: 'dogsitter-auth', key: key, token: token }, e.origin);
+      token = '';                                  // קוד ההצטרפות נשלח פעם אחת בלבד
+    } else if (d.type === 'dogsitter-save' && OK.test(d.key)) {
+      key = d.key; try { localStorage.setItem(K, key); } catch (x) {}
+    } else if (d.type === 'dogsitter-clear') {
+      key = ''; try { localStorage.removeItem(K); } catch (x) {}
+    }
+  });
+
+  frame.src = EXEC;                                // בלי מפתח בכתובת
+})();
+</script>
 </body>
 </html>
