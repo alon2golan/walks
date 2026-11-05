@@ -1,76 +1,246 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html dir="rtl" lang="he">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#2e6b3a">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="דוגיסיטר">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>דוגיסיטר</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-  html,body{margin:0;height:100%;background:#f6f7f5;overflow:hidden}
-  iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block}
-  #fallback{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:system-ui,Arial,sans-serif;color:#6b776d}
+  :root{--g:#2e6b3a;--g2:#e7f2e8;--bg:#f6f7f5;--card:#fff;--tx:#1d2a20;--mu:#6b776d;--on:#2e9b4a;--am:#c9861a;--am2:#fff4dc;--ln:#e6eae6}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--tx)}
+  header{background:var(--g);color:#fff;padding:14px 16px 12px}
+  header h1{margin:0;font-size:20px}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 12px}
+  .kpi{background:var(--card);border-radius:12px;padding:9px 4px;text-align:center;box-shadow:0 1px 2px #0001}
+  .kpi b{display:block;font-size:19px}
+  .kpi span{font-size:11.5px;color:var(--mu)}
+  .kpi.debt b{color:var(--am)}
+  section{background:var(--card);margin:0 12px 12px;border-radius:14px;padding:10px;box-shadow:0 1px 2px #0001}
+  .mbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .mbar h2{margin:0;font-size:18px}
+  .nav{border:0;background:var(--g2);color:var(--g);font-size:20px;width:40px;height:40px;border-radius:50%}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr) 1.25fr;gap:3px}
+  .hd{font-size:11px;color:var(--mu);text-align:center;padding-bottom:2px}
+  .d{border:1px solid var(--ln);border-radius:8px;padding:2px 2px 3px;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-height:74px;position:relative}
+  .d.out{opacity:.38}
+  .d.today{border:2px solid var(--g)}
+  .d.paid{background:var(--am2);border-color:#f0c66b}
+  .num{font-size:12px;font-weight:600;text-align:center;line-height:16px}
+  .today .num{color:var(--g)}
+  .w{border:1px solid #d5dcd6;background:#fff;border-radius:6px;height:22px;padding:0;font-size:12px;line-height:20px;filter:grayscale(1);opacity:.55}
+  .w.on{background:var(--on);border-color:var(--on);filter:none;opacity:1}
+  .w:active{transform:scale(.94)}
+  .coin{font-size:10px;font-weight:700;color:#8a5a00;text-align:center;line-height:12px;white-space:nowrap;overflow:hidden}
+  .sum{border-radius:8px;background:var(--g2);font-size:10.5px;line-height:15px;padding:3px 2px;display:flex;flex-direction:column;justify-content:center;text-align:center;min-height:74px}
+  .sum .r{color:#8a5a00}
+  .sum .e{color:var(--mu)}
+  .legend{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;font-size:11.5px;color:var(--mu);margin-top:8px}
+  form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  input,select{font-size:17px;padding:9px;border:1px solid #cfd6d0;border-radius:10px;width:100%;background:#fff;color:var(--tx)}
+  .full{grid-column:1/-1}
+  .save{grid-column:1/-1;background:var(--g);color:#fff;border:0;height:46px;border-radius:12px;font-size:17px}
+  h3{margin:0 0 10px;font-size:16px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:right;color:var(--mu);font-weight:500;padding:6px 4px;border-bottom:1px solid var(--ln)}
+  td{padding:7px 4px;border-bottom:1px solid #f0f2f0}
+  tfoot td{font-weight:700;border-bottom:0}
+  .x{border:0;background:none;color:#b33;font-size:16px;padding:0 4px}
+  .empty{color:var(--mu);text-align:center}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+  #toast.show{opacity:.92}
+  #pinBox{max-width:320px;margin:40px auto;padding:0 16px;text-align:center;display:grid;gap:12px}
+  #pinBox h2{margin:0;font-size:20px}
+  #pin{text-align:center;font-size:18px}
+  #pinErr{color:#b33;margin:0;min-height:20px}
+  #load{text-align:center;padding:40px;color:var(--mu)}
 </style>
 </head>
 <body>
-<div id="fallback">טוען…</div>
-<!-- האפליקציה עצמה רצה ב-Google Apps Script; הדף הזה רק מציג אותה במסך מלא.
-     אבטחה:
-     • קישור הצטרפות ‎#t=…‎ — החלק שאחרי # לא נשלח לאף שרת, ונמחק משורת הכתובת מיד.
-       הקוד חד-פעמי: בשימוש הראשון השרת מחליף אותו במפתח מכשיר, והקישור מפסיק לעבוד.
-     • מפתח המכשיר נשמר רק במכשיר ומועבר לאפליקציה ב-postMessage, רק לחלון שבתוך ה-iframe שלנו
-       ורק לדומיין של Google — אף פעם לא בכתובת URL. בגיליון נשמר רק hash שלו. -->
-<iframe id="app" title="דוגיסיטר" allow="clipboard-write" referrerpolicy="no-referrer"
-  onload="var f=document.getElementById('fallback'); if(f) f.remove()"></iframe>
+<header><h1>🐕 מעקב דוגיסיטר</h1></header>
+<div id="load">טוען…</div>
+<div id="pinBox" style="display:none">
+  <h2>🔒 הכנס סיסמה</h2>
+  <p style="margin:0;color:#6b776d">פעם אחת בלבד. המכשיר יזכור אותה.</p>
+  <input id="pin" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" placeholder="סיסמה" dir="ltr">
+  <button id="pinGo" class="save">כניסה</button>
+  <p id="pinErr"></p>
+</div>
+<div id="app" style="display:none">
+  <div class="kpis">
+    <div class="kpi"><b id="kPaid"></b><span>קיבלתי סה״כ</span></div>
+    <div class="kpi debt"><b id="kDebt"></b><span>מחכה לי</span></div>
+    <div class="kpi"><b id="kDue"></b><span>הרווחתי סה״כ</span></div>
+    <div class="kpi"><b id="kWeek"></b><span>טיולים השבוע</span></div>
+    <div class="kpi"><b id="kMonth"></b><span id="kMonthL">טיולים בחודש</span></div>
+    <div class="kpi"><b id="kPrice"></b><span>מחיר לטיול</span></div>
+  </div>
+
+  <section>
+    <div class="mbar">
+      <button class="nav" id="prev" aria-label="חודש קודם">‹</button>
+      <h2 id="mTitle"></h2>
+      <button class="nav" id="next" aria-label="חודש הבא">›</button>
+    </div>
+    <div class="cal" id="cal"></div>
+    <div class="legend"><span>🌅 בוקר · 🌙 ערב</span><span>🐾 טיולים</span><span>💰 התקבל</span><span>💵 הרווחתי</span></div>
+  </section>
+
+  <section>
+    <h3>💰 קיבלתי תשלום</h3>
+    <form id="payForm">
+      <input id="amt" type="number" inputmode="decimal" min="0" step="0.5" placeholder="סכום ₪" required>
+      <select id="method"></select>
+      <input id="pdate" class="full" type="date" required>
+      <button class="save" type="submit">שמירה</button>
+    </form>
+  </section>
+
+  <section>
+    <h3>💳 התשלומים שקיבלתי</h3>
+    <table><thead><tr><th>תאריך</th><th>סכום</th><th>אמצעי</th><th></th></tr></thead><tbody id="pays"></tbody>
+    <tfoot><tr><td>סה״כ</td><td id="paysTot"></td><td colspan="2"></td></tr></tfoot></table>
+  </section>
+</div>
+<div id="toast"></div>
+
 <script>
-(function () {
-  var EXEC = 'https://script.google.com/macros/s/AKfycbzd1K9hn0MMQs__kBtv9ujMBBuzE4I1PR8kT9cMJdqx__JxlngdX3TZAXgiilneYg0/exec';
-  var K = 'dogsitterKey', OK = /^[A-Za-z0-9]{32,80}$/;
-  var GOOG = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
-  var m = location.hash.match(/[#&]t=([A-Za-z0-9]{32,80})/), token = m ? m[1] : '';
-  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
-  var key = '';
-  try { localStorage.removeItem('dogsitterPin'); key = localStorage.getItem(K) || ''; } catch (e) {}
-  var frame = document.getElementById('app');
+// הדף רץ כולו ב-GitHub. הנתונים מגיעים מ-Google Apps Script ברקע (fetch בלי עוגיות),
+// כך שחשבון Google של המשתמש (גם חשבון ילד) לא מעורב. כל קריאה דורשת סיסמה בשרת.
+const API='https://script.google.com/macros/s/AKfycbzd1K9hn0MMQs__kBtv9ujMBBuzE4I1PR8kT9cMJdqx__JxlngdX3TZAXgiilneYg0/exec';
+function makeRun(){
+  let ok=()=>{}, bad=()=>{};
+  const p=new Proxy({},{get(_,name){
+    if(name==='withSuccessHandler') return f=>{ok=f;return p;};
+    if(name==='withFailureHandler') return f=>{bad=f;return p;};
+    return (...args)=>{
+      fetch(API,{method:'POST',credentials:'omit',redirect:'follow',cache:'no-store',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:name,args})})
+      .then(r=>r.json())
+      .then(j=>j.error?bad(new Error(j.error)):ok(j.result))
+      .catch(()=>bad(new Error('אין חיבור לשרת. בדוק אינטרנט ונסה שוב.')));
+    };
+  }});
+  return p;
+}
+window.google={script:{get run(){return makeRun();}}};
+</script>
+<script>
+const DAYS=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+let S=null, view=null, busy=false;
+const KEY='dogsitterPass';
+const getPin=()=>{try{return localStorage.getItem(KEY)||''}catch(e){return window.__pin||''}};
+const savePin=v=>{window.__pin=v;try{localStorage.setItem(KEY,v)}catch(e){}};
+const clearPin=()=>{window.__pin='';try{localStorage.removeItem(KEY)}catch(e){};};
+function showPin(msg){$('load').style.display='none';$('app').style.display='none';$('pinBox').style.display='';$('pinErr').textContent=msg||'';$('pin').value='';$('pin').focus();}
+function srv(ok,bad){return google.script.run.withSuccessHandler(ok).withFailureHandler(e=>{
+  const m=String(e&&e.message||e);
+  if(m.includes('BADKEY')){clearPin();S=null;busy=false;return showPin(window.__tried?'סיסמה שגויה':'');}
+  if(m.includes('LOCKED')){busy=false;return showPin('יותר מדי ניסיונות. נסה שוב בעוד 15 דקות');}
+  (bad||fail)(e);});}
+const $=id=>document.getElementById(id);
+const nis=v=>'₪'+(Math.round(Number(v)*100)/100);
+const isoOf=(y,m,d)=>new Date(Date.UTC(y,m,d)).toISOString().slice(0,10);
+const parse=iso=>{const [y,m,d]=iso.split('-').map(Number);return {y,m:m-1,d};};
+const addDays=(iso,n)=>{const p=parse(iso);return isoOf(p.y,p.m,p.d+n);};
+const dow=iso=>{const p=parse(iso);return new Date(Date.UTC(p.y,p.m,p.d)).getUTCDay();};
+const weekStart=iso=>addDays(iso,-dow(iso));
+const cnt=iso=>{const w=S.walks[iso];return w?(w.m?1:0)+(w.e?1:0):0;};
+const paidOn=iso=>S.payments.filter(p=>p.iso===iso).reduce((a,p)=>a+p.amount,0);
 
-  // האם ההודעה הגיעה מחלון שנמצא בתוך ה-iframe שלנו (ולא מחלון אחר)?
-  function insideOurFrame(w) {
-    function walk(win, depth) {
-      if (win === w) return true;
-      if (depth > 3) return false;
-      try { for (var i = 0; i < win.frames.length; i++) if (walk(win.frames[i], depth + 1)) return true; } catch (e) {}
-      return false;
-    }
-    return walk(frame.contentWindow, 0);
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800);}
+function fail(err){busy=false;toast('שגיאה: '+err.message);load();}
+function load(){
+  const p=getPin(); if(!p) return showPin();
+  srv(s=>{$('pinBox').style.display='none';set(s);},e=>{$('load').textContent='שגיאה: '+e.message;}).getState(p);
+}
+$('pinGo').onclick=()=>{
+  const v=$('pin').value; window.__tried=true; if(!v.trim()) return;
+  savePin(v); $('pinBox').style.display='none'; $('load').style.display=''; $('load').textContent='טוען…'; load();
+};
+$('pin').addEventListener('keydown',e=>{if(e.key==='Enter')$('pinGo').click();});
+
+function set(s){
+  const first=!S; S=s;
+  if(first){
+    const t=parse(s.today); view={y:t.y,m:t.m};
+    $('method').innerHTML=s.methods.map(m=>`<option>${m}</option>`).join('');
+    $('pdate').value=s.today;
+    $('load').style.display='none';$('app').style.display='';
   }
+  render();
+}
 
-  window.addEventListener('message', function (e) {
-    if (!GOOG.test(e.origin) || !insideOurFrame(e.source)) return;
-    var d = e.data || {};
-    if (d.type === 'dogsitter-ready') {
-      e.source.postMessage({ type: 'dogsitter-auth', key: key, token: token }, e.origin);
-      token = '';                                  // קוד ההצטרפות נשלח פעם אחת בלבד
-    } else if (d.type === 'dogsitter-save' && OK.test(d.key)) {
-      key = d.key; try { localStorage.setItem(K, key); } catch (x) {}
-    } else if (d.type === 'dogsitter-clear') {
-      key = ''; try { localStorage.removeItem(K); } catch (x) {}
+function render(){
+  // סיכום כללי
+  const all=Object.keys(S.walks).reduce((a,k)=>a+cnt(k),0);
+  const due=all*S.price, paid=S.payments.reduce((a,p)=>a+p.amount,0);
+  let wk=0; const ws=weekStart(S.today); for(let i=0;i<7;i++) wk+=cnt(addDays(ws,i));
+  const mPre=isoOf(view.y,view.m,1).slice(0,7);
+  const mon=Object.keys(S.walks).filter(k=>k.startsWith(mPre)).reduce((a,k)=>a+cnt(k),0);
+  $('kPaid').textContent=nis(paid);$('kDebt').textContent=nis(due-paid);$('kDue').textContent=nis(due);
+  $('kWeek').textContent=wk;$('kMonth').textContent=mon;$('kPrice').textContent=nis(S.price);
+  const mName=new Date(Date.UTC(view.y,view.m,1)).toLocaleDateString('he-IL',{month:'long',timeZone:'UTC'});
+  $('kMonthL').textContent='טיולים ב'+mName;
+  $('mTitle').textContent=new Date(Date.UTC(view.y,view.m,1)).toLocaleDateString('he-IL',{month:'long',year:'numeric',timeZone:'UTC'});
+
+  // יומן חודשי
+  let h=DAYS.map(d=>`<div class="hd">${d}</div>`).join('')+'<div class="hd">סיכום</div>';
+  const first=isoOf(view.y,view.m,1), last=isoOf(view.y,view.m+1,0);
+  for(let s=weekStart(first); s<=last; s=addDays(s,7)){
+    let w=0,r=0;
+    for(let i=0;i<7;i++){
+      const iso=addDays(s,i), p=parse(iso), wl=S.walks[iso]||{}, pay=paidOn(iso);
+      w+=cnt(iso); r+=pay;
+      const cls=['d']; if(p.m!==view.m) cls.push('out'); if(iso===S.today) cls.push('today'); if(pay) cls.push('paid');
+      h+=`<div class="${cls.join(' ')}">
+        <div class="num">${p.d}</div>
+        <button class="w${wl.m?' on':''}" data-i="${iso}" data-s="m" aria-label="בוקר ${iso}">🌅</button>
+        <button class="w${wl.e?' on':''}" data-i="${iso}" data-s="e" aria-label="ערב ${iso}">🌙</button>
+        ${pay?`<div class="coin">💰${Math.round(pay*10)/10}</div>`:''}
+      </div>`;
     }
-  });
+    h+=`<div class="sum"><div>🐾 ${w}</div><div class="r">💰 ${nis(r)}</div><div class="e">💵 ${nis(w*S.price)}</div></div>`;
+  }
+  $('cal').innerHTML=h;
 
-  // קישור שהודבק בלשונית שכבר פתוחה: הדפדפן משנה רק את ה-# בלי לטעון מחדש, אז טוענים בעצמנו
-  window.addEventListener('hashchange', function () {
-    if (/[#&]t=[A-Za-z0-9]{32,80}/.test(location.hash)) location.reload();
-  });
+  // טבלת תשלומים
+  const ps=S.payments.slice().sort((a,b)=>b.iso.localeCompare(a.iso));
+  $('pays').innerHTML=ps.length?ps.map(p=>{const q=parse(p.iso);return `<tr><td>${String(q.d).padStart(2,'0')}/${String(q.m+1).padStart(2,'0')}/${q.y}</td><td>${nis(p.amount)}</td><td>${p.method}</td><td><button class="x" data-row="${p.row}" data-iso="${p.iso}" data-amt="${p.amount}" aria-label="מחיקה">✕</button></td></tr>`;}).join(''):'<tr><td colspan="4" class="empty">עוד אין תשלומים</td></tr>';
+  $('paysTot').textContent=nis(paid);
+}
 
-  frame.src = EXEC;                                // בלי מפתח בכתובת
-})();
+$('cal').addEventListener('click',e=>{
+  const b=e.target.closest('.w'); if(!b) return;
+  const iso=b.dataset.i, sl=b.dataset.s;
+  const w=S.walks[iso]||(S.walks[iso]={m:false,e:false});
+  const v=!w[sl]; w[sl]=v; render();                 // עדכון מיידי במסך
+  srv(()=>{}).setWalk(getPin(),iso,sl,v);
+});
+$('prev').onclick=()=>{view=view.m===0?{y:view.y-1,m:11}:{y:view.y,m:view.m-1};render();};
+$('next').onclick=()=>{view=view.m===11?{y:view.y+1,m:0}:{y:view.y,m:view.m+1};render();};
+$('payForm').onsubmit=e=>{
+  e.preventDefault(); if(busy) return;
+  const a=parseFloat($('amt').value); if(!(a>0)) return toast('הכנס סכום');
+  busy=true;
+  srv(s=>{busy=false;set(s);$('amt').value='';$('amt').blur();toast('נרשם תשלום '+nis(a)+' ✅');})
+    .addPayment(getPin(),a,$('method').value,$('pdate').value);
+};
+$('pays').addEventListener('click',e=>{
+  const b=e.target.closest('.x'); if(!b||busy) return;
+  if(!confirm('למחוק את התשלום הזה?')) return;
+  busy=true;
+  srv(s=>{busy=false;set(s);toast('התשלום נמחק');})
+    .deletePayment(getPin(),+b.dataset.row,b.dataset.iso,+b.dataset.amt);
+});
+load();
 </script>
 </body>
 </html>
